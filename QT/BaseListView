@@ -1,0 +1,199 @@
+import QtQuick 2.4
+import QtQuick.Window 2.2
+
+Window {
+    width: 555
+    height: 150
+    visible: true
+
+    property bool isME: true
+    property int idxSpace: 3
+    property bool oriHozi: true
+
+    function getRndInteger(min, max) {
+      return Math.floor(Math.random() * (max - min + 1) ) + min;
+    }
+
+    function getVisibleItem (curIndex) {
+        var fromIndex = -1;
+        var toIndex = -1;
+
+        if (oriHozi)
+        {
+            if (isME) {
+                if (idListView.contentX === idListView.originX) {
+                    fromIndex = idListView.count - print_ (idListView.contentX,
+                                                               idListView.contentX + idListView.width, 1, 1)
+                    toIndex = idListView.count - 1
+                }
+                else {
+                    var IdxItemME = idListView.indexAt(idListView.contentX + idListView.width - idListView.preferredHighlightBegin - 1, 1)
+                    toIndex = IdxItemME + print_ (idListView.contentX + idListView.width - idListView.preferredHighlightBegin, idListView.contentX, 0, 1) - 1
+                    fromIndex = IdxItemME - print_ (idListView.contentX + idListView.width - idListView.preferredHighlightBegin + idListView.spacing, idListView.contentX + idListView.width, 1, 1)
+                }
+            }
+            else
+            {
+                if (idListView.contentX + idListView.width - idListView.originX == idListView.contentWidth) {
+                    fromIndex = idListView.count - print_ (idListView.contentX + idListView.width - idListView.originX,
+                                                               idListView.contentX - idListView.originX, 0, 1)
+                    toIndex = idListView.count - 1
+                }
+                else {
+                    var IdxItem = idListView.indexAt(idListView.contentX + idListView.preferredHighlightBegin, 1)
+                    fromIndex = IdxItem - print_ (idListView.contentX + idListView.preferredHighlightBegin - idListView.spacing, idListView.contentX, 0, 1)
+                    toIndex = print_ (idListView.contentX + idListView.preferredHighlightBegin, idListView.contentX + idListView.width, 1, 1) + IdxItem - 1
+                }
+            }
+        }
+
+        console.log("fromIndex: " + fromIndex)
+        console.log("toIndex: " + toIndex)
+        if (fromIndex <= curIndex && toIndex >= curIndex) { return [0, fromIndex, toIndex] }
+        if (fromIndex > curIndex) { return [-1, fromIndex, toIndex] }
+        if (toIndex < curIndex) { return [1, fromIndex, toIndex] }
+    }
+
+    function print_ (start, end, isL2R, isHozi) {
+        var total = nItemS2E (start, end, isL2R, isHozi)
+        console.log("number Item: " + total)
+        return total
+    }
+
+    function nItemS2E (start, end, isL2R, isHozi) {
+        var space = end - start
+        console.log("space: " + space)
+        if (isL2R) {
+            if (space <= 0) {
+                console.log("space <= 0")
+                return 0
+            }
+        }
+        else {
+            if (space >= 0) {
+                console.log("space >= 0")
+                return 0
+            }
+            space = start - end
+        }
+
+        var total = 0
+        for (var idx = 0; idx < idListView.count; idx++) {
+            var index_ = isL2R ? idListView.indexAt(start, 1) : idListView.indexAt(start - 1, 1)
+            var item_ = isL2R ? idListView.itemAt(start, 1) : idListView.itemAt(start - 1, 1)
+
+            if (item_ === null || index_ === -1) {
+                console.log("item_ === null: " + idx)
+                return idx
+            }
+            else {
+                console.log("item_.width: " + item_.width)
+            }
+
+            if (isL2R) {
+                total = total + item_.width
+                if (total > space) { return idx }
+                total = total + idListView.spacing
+                start = start + item_.width + idListView.spacing
+            }
+            else {
+                total = total + item_.width
+                if (total > space) { return idx }
+                total = total + idListView.spacing
+                start = start - item_.width - idListView.spacing
+            }
+        }
+
+        console.log("idListView.count")
+        return idListView.count
+    }
+
+    function getWidth (idx) {
+        if (idx % 3 == 0) return 50
+        if (idx % 4 == 1) return 65
+        if (idx % 5 == 2) return 70
+        return 55
+    }
+
+    ListView {
+        id: idListView
+        anchors.fill: parent
+        spacing: 34
+        model: 15
+
+        delegate: Component {
+            id: idDelegate
+            Rectangle {
+                height: ListView.view.height
+                color: ListView.view.currentIndex === index ? "red" : "steelblue"
+                width: getWidth (index) + ((ListView.view.currentIndex === index) ? 20 : 0)
+                border.color: "black"
+                border.width: 3
+                Text {
+                    anchors.centerIn: parent
+                    text: index
+                    font.pixelSize: 20
+                }
+            }
+        }
+
+        onCurrentIndexChanged: {
+            console.log("originX: " + originX)
+        }
+
+        onMovementEnded: {
+            console.log("-------------------")
+            console.log("originY: " + originY)
+            console.log("originX: " + originX)
+            console.log("contentX: " + contentX)
+            console.log("contentY: " + contentY)
+            console.log("contentWidth: " + contentWidth)
+            var idx = idListView.indexAt(idListView.contentX + idListView.width - preferredHighlightBegin - 1, 1)
+            console.log("indexAt: " + idx)
+
+            var outPut = getVisibleItem (idListView.currentIndex)
+//            console.log("outPut[0]: " + outPut[0])
+//            console.log("outPut[1]: " + outPut[1])
+//            console.log("outPut[2]: " + outPut[2])
+        }
+
+        layoutDirection: isME ? Qt.RightToLeft : Qt.LeftToRight
+        orientation: Qt.Horizontal
+        snapMode: ListView.SnapToItem
+
+//        preferredHighlightBegin: idListView.width - 350 //  (30 + 30) * idxSpace
+//        preferredHighlightEnd: idListView.width - 350 //(30 + 30) * idxSpace + 30
+//        highlightRangeMode: ListView.StrictlyEnforceRange
+    }
+
+    Rectangle {
+        anchors.bottom: idListView.bottom
+        anchors.left: idListView.left
+
+        height: 30
+        width: 50
+        color: "gray"
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                idListView.currentIndex = idListView.currentIndex - 1
+                if (idListView.currentIndex < 0) { idListView.currentIndex = idListView.count - 1 }
+            }
+        }
+    }
+
+    Rectangle {
+        anchors.bottom: idListView.bottom
+        anchors.right: idListView.right
+        height: 30
+        width: 50
+        color: "gray"
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                idListView.currentIndex = idListView.currentIndex + 1
+                if (idListView.currentIndex > idListView.count - 1) { idListView.currentIndex = 0 }
+            }
+        }
+    }
+}
